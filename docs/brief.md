@@ -25,6 +25,7 @@
 - Eliminar una tarea, con confirmación previa.
 - Limpiar el formulario después de guardar.
 - Mostrar un estado de lista vacía y mensajes de error de validación.
+- Evitar que el teclado tape los campos y el botón «Guardar» del formulario.
 - Guardar los datos **solo en memoria**: se pierden al cerrar la app.
 - Interfaz en español.
 
@@ -103,12 +104,12 @@ Una tarea es un objeto con tres campos:
 4. La app valida:
    - **Si hay errores**: se queda en el formulario, muestra el error bajo cada campo con problema y **conserva** lo escrito.
    - **Si es válido**: crea la tarea con un `id` nuevo, la agrega a la lista, **limpia el formulario** y vuelve a la lista.
-5. La nueva tarea aparece en la lista.
+5. La nueva tarea aparece **al principio** de la lista.
 
 ### 5.2 Editar una tarea
 
 1. En la lista, la persona **toca una tarea**.
-2. Se abre el formulario «Editar tarea» con título y descripción cargados.
+2. Se abre el formulario «Editar tarea» con título y descripción cargados. Si el `id` recibido no corresponde a ninguna tarea, la app vuelve a la lista.
 3. Modifica los campos y toca **«Guardar»**.
 4. La app valida con las mismas reglas que al agregar:
    - **Si hay errores**: se queda en el formulario con los mensajes.
@@ -157,7 +158,7 @@ Cada criterio se puede comprobar a mano en el celular.
 ### 7.2 Agregar tarea
 
 - [ ] **CA-A1.** Al tocar «+», se abre el formulario «Nueva tarea» con los dos campos vacíos.
-- [ ] **CA-A2.** Con título y descripción válidos, al guardar la tarea aparece en la lista.
+- [ ] **CA-A2.** Con título y descripción válidos, al guardar la tarea aparece al principio de la lista.
 - [ ] **CA-A3.** Después de guardar, la app vuelve a la lista.
 - [ ] **CA-A4.** Al volver a tocar «+» después de guardar, el formulario está vacío.
 - [ ] **CA-A5.** Con el título vacío o solo espacios, no se guarda y aparece «El título es obligatorio».
@@ -182,6 +183,7 @@ Cada criterio se puede comprobar a mano en el celular.
 - [ ] **CA-D3.** Al elegir «Eliminar», la tarea desaparece de la lista y las demás permanecen.
 - [ ] **CA-D4.** Al elegir «Cancelar», la tarea sigue en la lista sin cambios.
 - [ ] **CA-D5.** Al eliminar la última tarea, se muestra el estado de lista vacía.
+- [ ] **CA-D6.** Tocar la papelera abre solo el diálogo de confirmación; no abre el formulario de edición.
 
 ### 7.5 Generales
 
@@ -189,28 +191,30 @@ Cada criterio se puede comprobar a mano en el celular.
 - [ ] **CA-G2.** La app funciona en un celular Android con Expo Go (SDK 57), sin librerías que requieran código nativo adicional.
 - [ ] **CA-G3.** La navegación es de tipo stack: el botón atrás vuelve a la pantalla anterior.
 - [ ] **CA-G4.** `npx tsc --noEmit` y `npx expo lint` terminan sin errores.
+- [ ] **CA-G5.** En el formulario, con el teclado abierto, el teclado no tapa los campos ni el botón «Guardar».
+- [ ] **CA-G6.** Los botones que solo tienen ícono («+» y papelera) tienen etiqueta de accesibilidad, y todos los elementos tocables miden al menos 48 dp.
 
-## 8. Supuestos y preguntas abiertas
+## 8. Supuestos y decisiones
 
 ### Supuestos
 
 1. La app se prueba en Android con Expo Go (SDK 57); no se hace una compilación nativa propia.
 2. No hay límite de largo en título ni descripción.
-3. Las tareas nuevas se agregan **al final** de la lista.
+3. Las tareas nuevas se muestran **primero** (arriba de la lista).
 4. Se permiten tareas con el mismo título; lo que las distingue es el `id`.
-5. El `id` lo genera la app, sin librerías extra.
+5. El `id` lo genera la app.
 6. El estado compartido se hace con React Context, sin librerías de estado externas.
 7. Los textos de la interfaz están en español; el código, los archivos y las variables están en inglés.
 8. El diseño visual detallado (colores, tipografía, espaciado) **no** va en este brief. Se documentará aparte en `docs/design.md`.
 
-### Preguntas abiertas
+### Decisiones
 
-1. **Confirmación al guardar.** Hoy la confirmación es que el cambio se ve en la lista. ¿Se quiere además un aviso breve («Tarea guardada»)? Habría que decidir el mecanismo, porque Expo Go limita algunas opciones.
-2. **Cambios sin guardar.** Si la persona escribe algo y toca atrás, ¿se descarta sin preguntar (lo asumido) o se pregunta «¿Descartar cambios?»?
-3. **Generación del `id`.** ¿Qué método se usa para que sea único y funcione en Expo Go? Se decide al implementar.
-4. **Tarea inexistente.** Si el formulario se abre con un `id` que ya no existe, ¿qué hace? Propuesta: volver a la lista.
-5. **Orden de la lista.** ¿Las tareas más nuevas deberían ir primero en lugar de al final?
-6. **Teclado.** ¿El formulario debe desplazarse para que el teclado no tape los campos ni el botón «Guardar»? Se espera que sí, y se resuelve en la implementación.
+1. **Confirmación al guardar.** No hay aviso «Tarea guardada» en el MVP: la confirmación es ver el cambio en la lista.
+2. **Cambios sin guardar.** Al tocar atrás con cambios sin guardar, se descartan sin preguntar.
+3. **Generación del `id`.** Se genera con `Crypto.randomUUID()` de `expo-crypto` (ver `docs/stack.md`).
+4. **Tarea inexistente.** Si el formulario recibe un `id` que no existe, vuelve a la lista.
+5. **Orden de la lista.** Las tareas nuevas se muestran primero (ver supuesto 3).
+6. **Teclado.** El formulario debe evitar que el teclado tape los campos y el botón «Guardar». Es un requisito del MVP.
 
 ## Sugerencias (fuera de alcance, para considerar más adelante)
 
