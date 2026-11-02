@@ -1,0 +1,68 @@
+import { MaterialIcons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { colors, minTouchTarget, radius, shadow, spacing, typography } from "@/theme";
+import type { Task } from "@/types/task";
+
+type Props = { task: Task; onPress: () => void; onDelete: () => void };
+
+// The trash button is a sibling of the main area, not a child, so tapping it never opens the editor.
+export function TaskItem({ task, onPress, onDelete }: Props) {
+  return (
+    <View style={styles.card}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Editar tarea: ${task.title}`}
+        onPress={onPress}
+        android_ripple={{ color: colors.primaryContainer }}
+        style={styles.content}
+      >
+        <Text style={styles.title} numberOfLines={2}>
+          {task.title}
+        </Text>
+        <Text style={styles.description} numberOfLines={2}>
+          {task.description}
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Eliminar tarea: ${task.title}`}
+        onPress={onDelete}
+        android_ripple={{ color: colors.primaryContainer, radius: minTouchTarget / 2 }}
+        style={styles.delete}
+      >
+        <MaterialIcons name="delete-outline" size={24} color={colors.textSecondary} />
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    marginBottom: spacing.md,
+    ...shadow.card,
+  },
+  content: {
+    flex: 1,
+    minHeight: minTouchTarget,
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm,
+    gap: spacing.sm,
+    borderTopLeftRadius: radius.card,
+    borderBottomLeftRadius: radius.card,
+  },
+  title: { ...typography.title, color: colors.text },
+  description: { ...typography.body, color: colors.textSecondary },
+  delete: {
+    width: minTouchTarget,
+    height: minTouchTarget,
+    marginRight: spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
