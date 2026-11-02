@@ -50,7 +50,7 @@ Versiones del proyecto hoy (de `package.json`): `expo ~57.0.31`, `expo-router ~5
 | Lenguaje | JavaScript / TypeScript con React | Tecnologías web (HTML, CSS, JavaScript) con Angular, React o Vue | Dart | Kotlin (Android), Swift (iOS) |
 | Cómo se dibuja la interfaz | Vistas nativas reales de cada plataforma | Interfaz web dentro de un contenedor nativo (Capacitor) | Widgets propios que Flutter dibuja él mismo, sin usar los widgets del sistema | Vistas y herramientas oficiales de cada plataforma (Android: Jetpack Compose) |
 | Un código para Android e iOS | Sí | Sí | Sí | No: son dos proyectos y dos lenguajes (consecuencia lógica) |
-| Prueba rápida en el celular | Expo Go: se escanea un QR | Se despliega con Capacitor o Cordova, o corre en el navegador como PWA | Máquina virtual con *hot reload* en desarrollo | Android Studio o Xcode |
+| Prueba rápida en el celular | Expo Go: se escanea un QR | Se despliega con Capacitor o Cordova, o corre en el navegador como PWA | Emulador o celular conectado (USB o red), con hot reload | Android Studio o Xcode |
 | Curva de aprendizaje para quien ya sabe JavaScript o React | Baja | Baja si sabe web | Media: hay que aprender Dart (criterio) | Alta: dos lenguajes y dos entornos (criterio) |
 | Limitación importante | Expo Go solo incluye ciertos módulos nativos | Depende del contenedor nativo y de sus plugins | Reimplementa los controles, por lo que no son los del sistema | Doble esfuerzo para dos plataformas |
 
@@ -243,6 +243,7 @@ La guía de íconos de Expo advierte: «`@expo/vector-icons` will be deprecated 
 | `jest` | `~29.7` | Ejecuta las pruebas |
 | `@types/jest` | `~29.5` | Tipos de TypeScript para Jest |
 | `@testing-library/react-native` | `~13.3.3` | Pruebas de componentes por lo que ve el usuario |
+| `react-test-renderer` | `19.2.3` | Dependencia compartida que pide RNTL 13; se fija a mano (desviación 2, sección 16) |
 
 Configuración: `"jest": { "preset": "jest-expo" }` en `package.json` y `"jest"` en `compilerOptions.types` de `tsconfig.json`.
 
@@ -252,7 +253,7 @@ Configuración: `"jest": { "preset": "jest-expo" }` en `package.json` y `"jest"`
 
 - `jest-expo ~57.0.6` es la versión que Expo lista para SDK 57 y depende de `babel-jest ^29`, es decir, de **Jest 29**. Jest 30 llega con SDK 58.
 - Para Expo Router, la guía oficial dice que en SDK 57 `expo-router/testing-library` funciona **solo con `@testing-library/react-native` versión 13**; la versión 14 se exige desde SDK 58.
-- `react-test-renderer` ya viene dentro de `jest-expo` (fijo en `19.2.3`), así que **no se instala a mano**.
+- `react-test-renderer` viene dentro de `jest-expo` (fijo en `19.2.3`), pero RNTL 13 lo pide como dependencia compartida y `npm` intenta traer una versión incompatible con React 19.2.3. Por eso **se fija a mano en `19.2.3`** (ver desviación 2 en la sección 16).
 
 ### Trampa a evitar
 
@@ -308,19 +309,24 @@ Estas herramientas ayudan a **escribir** el código; no forman parte de la app. 
 | Herramienta | Estado en el equipo | Para qué sirve |
 |---|---|---|
 | **Claude Code** | En uso | Agente de programación que lee el proyecto, edita archivos y ejecuta comandos con permiso |
-| **Plugin `expo`** | Plugin pedido para el proyecto | Skills oficiales de Expo que guían al agente en tareas de Expo. Repositorio: `expo/skills` |
+| **Plugin `expo`** | Instalado, alcance **project** (confirmado con `claude plugin install`, que respondió que ya estaba instalado) | Skills oficiales de Expo que guían al agente en tareas de Expo. Repositorio: `expo/skills` |
 | **Plugin `frontend-design`** | Versión **1.1.1**, desde `claude-plugins-official`, alcance **project** | Hace que el agente elija una dirección visual antes de escribir código de interfaz. Es una capa de estilo, no de corrección: no garantiza que el código funcione |
 | **Plugin `ponytail`** | Versión **5.3.3**, marketplace `DietrichGebert/ponytail`, alcance **project**, modo **lite** con `PONYTAIL_DEFAULT_MODE=lite` | Conjunto de reglas (estilo YAGNI) que hace que el agente escriba solo lo necesario y no sobreconstruya. Es un plugin de la comunidad, no oficial de Anthropic |
 | **MCP Context7** | Alcance **user**, conectado | Entrega al agente documentación actualizada de librerías en vez de depender de su memoria. Trabaja en dos pasos: encontrar la librería y consultar su documentación |
 
 Notas:
 
-- **ponytail:** su README define los modos con `/ponytail [lite | full | ultra | off]`, pero no detalla qué cambia en cada nivel. Un análisis de terceros indica que su beneficio se nota en tareas grandes y casi no en las pequeñas, y que no reemplaza decidir la arquitectura ni revisar los cambios.
+- **ponytail:** los modos se cambian con `/ponytail [lite | full | ultra | off]`. Según `/ponytail-help`:
+  - **Lite:** construye lo pedido y menciona en una línea la opción más pequeña.
+  - **Full** (predeterminado): el cambio mínimo completo, con verificación donde la lógica lo necesite, y una respuesta que nombra lo omitido y los riesgos.
+  - **Ultra:** como Full, pero además cuestiona la solicitud antes de construir.
+
+  Un análisis de terceros indica que su beneficio se nota en tareas grandes y casi no en las pequeñas, y que no reemplaza decidir la arquitectura ni revisar los cambios.
 - **frontend-design y diseño:** como el diseño visual se documentará en `docs/design.md`, ese plugin será más útil en esa etapa.
 
-## 14. Paquetes pendientes de instalar
+## 14. Paquetes a instalar
 
-**Aún no se instalan.** Hoy `package.json` no los incluye. Se instalarán al empezar la implementación, con `npx expo install` (en Windows se escribe `"--"` antes de `--dev`).
+Se instalaron al empezar la implementación, con `npx expo install`. Las filas marcadas con (*) no estaban en la planificación original y se documentan en la sección 16.
 
 | Paquete | Versión | Tipo |
 |---|---|---|
@@ -330,6 +336,9 @@ Notas:
 | `jest` | `~29.7` | desarrollo |
 | `@types/jest` | `~29.5` | desarrollo |
 | `@testing-library/react-native` | `~13.3.3` | desarrollo |
+| `react-test-renderer` (*) | `19.2.3` | desarrollo |
+| `eslint` (*) | `^9.39.5` | desarrollo |
+| `eslint-config-expo` (*) | `~57.0.2` | desarrollo |
 
 Después de instalar, se corre `npx expo install --check` para confirmar que las versiones sean las que espera el SDK. Si `expo install` no acepta fijar una versión en alguno de los paquetes de desarrollo, se ajusta en ese momento.
 
@@ -344,6 +353,15 @@ Después de instalar, se corre `npx expo install --check` para confirmar que las
 | 5 | `Alert.alert` no distingue estilo de botones en Android | Aceptarlo en el MVP o reemplazar por un modal propio si el diseño lo pide |
 | 6 | Expo Go es un entorno de aprendizaje, no de producción | Mencionarlo en el informe; usar *development build* si se publicara |
 
+## 16. Desviaciones documentadas
+
+Cambios respecto de lo planificado, surgidos al implementar.
+
+| # | Desviación | Por qué |
+|---|---|---|
+| 1 | Se agregan **`eslint`** (`^9.39.5`) y **`eslint-config-expo`** (`~57.0.2`), con un `eslint.config.js` que ignora `dist/` y `example/` | `npx expo lint` no funciona sin ESLint, y `AGENTS.md` exige ejecutarlo antes de cerrar cada tarea. No estaba en la sección 14 original |
+| 2 | Se fija **`react-test-renderer@19.2.3`** como dependencia de desarrollo | Estaba previsto no instalarlo a mano (ya viene dentro de `jest-expo`). Pero RNTL 13 lo declara como dependencia compartida (`>=18.2.0`) y `npm` intentó traer la versión 19.3.1, que exige React 19.3.1: la instalación fallaba con `ERESOLVE`. Fijarlo en la versión que usa `jest-expo` y que coincide con el React del proyecto (19.2.3) lo resuelve |
+
 ## Nota de fuentes
 
 - **Documentación de Expo SDK 57**: páginas de Crypto, Keyboard Controller, Symbols, Safe Area Context, guía de teclado, guía de íconos, Expo Router (introducción y pruebas), pruebas unitarias con Jest, Expo Go y blog sobre *edge-to-edge*.
@@ -351,6 +369,6 @@ Después de instalar, se corre `npx expo install --check` para confirmar que las
 - **React:** referencia de `useReducer`.
 - **Frameworks comparados:** documentación de Ionic y Capacitor, de Flutter (arquitectura y Dart) y de Android (Kotlin).
 - **npm y archivos locales:** registro de npm para `jest-expo`, `@testing-library/react-native`; `node_modules/expo/bundledNativeModules.json`; `package.json` y `app.json`.
-- **Herramientas de agentes:** `claude plugin list` y `claude mcp list` en el equipo del proyecto para versiones, alcances y estado. Para describir qué hacen `ponytail` y `frontend-design` se usaron además el README de ponytail y artículos de terceros, no documentación de Anthropic.
+- **Herramientas de agentes:** `claude plugin list` y `claude mcp list` en el equipo del proyecto para versiones, alcances y estado. Para describir qué hacen `ponytail` y `frontend-design` se usaron además el README de ponytail y artículos de terceros, no documentación de Anthropic; los niveles de ponytail salen de `/ponytail-help`.
 - **Context7:** está instalado con alcance de usuario y conectado, pero **no estuvo disponible durante la redacción**, porque la sesión de Claude Code se inició antes de instalarlo. Por eso las verificaciones se hicieron directamente contra las fuentes oficiales anteriores.
 - Los puntos marcados **(criterio)** son juicios propios, no datos de una fuente.
