@@ -30,6 +30,12 @@ describe("tasksReducer", () => {
     });
   });
 
+  describe("load", () => {
+    it("replaces the list with the saved tasks", () => {
+      expect(tasksReducer([a], { type: "load", tasks: [b, c] })).toEqual([b, c]);
+    });
+  });
+
   describe("delete", () => {
     it("removes only the task with that id", () => {
       expect(tasksReducer([a, b, c], { type: "delete", id: "b" })).toEqual([a, c]);
