@@ -629,6 +629,15 @@ Lo planificado en `stack.md` no coincidió del todo con la realidad. Estas son l
 | **Autenticación** | Cuentas de usuario |
 | **APIs** | Consumo de un servidor y sincronización |
 
+### ¿Qué son Firebase y Firestore?
+
+La **Evaluación 2** (rama `eva2`) usará **Firebase** para la autenticación y la sincronización de las tareas.
+
+- **Firebase** es una plataforma de Google con servicios de backend listos para usar (autenticación de usuarios, bases de datos, entre otros). Permite que la app tenga cuentas y datos en la nube sin programar un servidor propio.
+- **Firestore** es la base de datos en la nube de Firebase. Guarda la información en **documentos** agrupados en **colecciones** (por ejemplo, `users/{uid}/tasks`). Tiene dos características útiles aquí: funciona sin conexión (guarda cambios localmente y los sube después) y puede **avisar en tiempo real** cuando un dato cambia.
+
+En la app, **Firebase Auth** identifica a la persona que inicia sesión y **Firestore** guarda las tareas de esa persona, de modo que las vea en cualquier dispositivo donde ingrese.
+
 Ideas ya anotadas en el brief, fuera del MVP: marcar tareas como completadas y modo oscuro.
 
 ---
