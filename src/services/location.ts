@@ -26,3 +26,14 @@ export async function getCurrentLocation(): Promise<LocationResult> {
     return { status: "unavailable" };
   }
 }
+
+// Turns coordinates into "Ciudad, Región". Best effort: undefined means show the coordinates instead.
+export async function describePlace(lat: number, lon: number): Promise<string | undefined> {
+  try {
+    const [address] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+    const name = [address?.city ?? address?.district ?? address?.subregion, address?.region].filter(Boolean).join(", ");
+    return name || undefined;
+  } catch {
+    return undefined;
+  }
+}

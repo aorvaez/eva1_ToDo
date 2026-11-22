@@ -19,5 +19,7 @@ export type Task = {
   // Local file in the app's documents folder; optional so tasks saved before Eva 2 still load.
   imageUri?: string;
   // Where the task was created; set once, never updated by the edit flow.
-  location?: { lat: number; lon: number };
+  location?: { lat: number; lon: number; name?: string };
+  // Weather at that place when the task was created (tempC in °C, code as WMO).
+  weather?: { tempC: number; code: number };
 };

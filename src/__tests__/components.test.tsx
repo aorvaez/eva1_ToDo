@@ -32,9 +32,25 @@ describe("TaskItem", () => {
     expect(screen.getByLabelText("Foto de Comprar pan")).toBeTruthy();
   });
 
-  it("shows where the task was created", () => {
+  it("shows the place name when there is one", () => {
+    render(
+      <TaskItem
+        task={{ ...task, location: { lat: -33.4489, lon: -70.6693, name: "Providencia, Metropolitana" } }}
+        onPress={jest.fn()}
+        onDelete={jest.fn()}
+      />,
+    );
+    expect(screen.getByText("Providencia, Metropolitana")).toBeTruthy();
+  });
+
+  it("falls back to the coordinates when the name is unknown", () => {
     render(<TaskItem task={{ ...task, location: { lat: -33.4489, lon: -70.6693 } }} onPress={jest.fn()} onDelete={jest.fn()} />);
     expect(screen.getByText("-33.4489, -70.6693")).toBeTruthy();
+  });
+
+  it("shows the temperature and sky at the place", () => {
+    render(<TaskItem task={{ ...task, weather: { tempC: 18.4, code: 0 } }} onPress={jest.fn()} onDelete={jest.fn()} />);
+    expect(screen.getByText("18 °C · Despejado")).toBeTruthy();
   });
 
   it("tapping the card opens the editor", () => {

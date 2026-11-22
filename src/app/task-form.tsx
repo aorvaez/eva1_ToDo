@@ -9,7 +9,8 @@ import { FormField } from "@/components/FormField";
 import { RichTextField } from "@/components/RichTextField";
 import { useTasks } from "@/context/TasksContext";
 import { takePhoto } from "@/services/camera";
-import { getCurrentLocation } from "@/services/location";
+import { describePlace, getCurrentLocation } from "@/services/location";
+import { fetchWeather } from "@/services/weather";
 import { colors, minTouchTarget, radius, spacing, typography } from "@/theme";
 import type { RichDoc } from "@/types/task";
 import { emptyDoc } from "@/utils/richDoc";
@@ -25,6 +26,7 @@ export default function TaskForm() {
   const [errors, setErrors] = useState<TaskErrors>({});
   const [imageUri, setImageUri] = useState<string | undefined>(editing?.imageUri);
   const [place, setPlace] = useState(editing?.location);
+  const [weather, setWeather] = useState(editing?.weather);
   const [locating, setLocating] = useState(!editing);
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -33,9 +35,15 @@ export default function TaskForm() {
   const isNew = !id;
   useEffect(() => {
     if (!isNew) return;
-    getCurrentLocation().then((result) => {
-      if (result.status === "ok") setPlace({ lat: result.lat, lon: result.lon });
+    getCurrentLocation().then(async (result) => {
       setLocating(false);
+      if (result.status !== "ok") return;
+      const { lat, lon } = result;
+      setPlace({ lat, lon });
+      // Name and weather are best effort: the task is saved even if they fail or arrive late.
+      const [name, now] = await Promise.all([describePlace(lat, lon), fetchWeather(lat, lon)]);
+      setPlace((p) => (p ? { ...p, name } : p));
+      setWeather(now);
     });
   }, [isNew]);
 
@@ -87,6 +95,7 @@ export default function TaskForm() {
         description: current,
         imageUri,
         location: editing ? editing.location : place,
+        weather: editing ? editing.weather : weather,
       },
     });
     // The form clears itself: going back unmounts this screen and its state.
