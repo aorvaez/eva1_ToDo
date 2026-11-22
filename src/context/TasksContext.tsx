@@ -8,23 +8,25 @@ type TasksContextValue = { tasks: Task[]; dispatch: Dispatch<TasksAction> };
 
 const TasksContext = createContext<TasksContextValue | null>(null);
 
-export function TasksProvider({ children }: { children: ReactNode }) {
+// userId is null while nobody is signed in: the list stays empty and nothing is read or written.
+export function TasksProvider({ userId, children }: { userId: string | null; children: ReactNode }) {
   const [tasks, dispatch] = useReducer(tasksReducer, []);
   // Nothing is saved until the stored list is loaded, so an empty start never overwrites it.
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    loadTasks().then((saved) => {
+    if (!userId) return;
+    loadTasks(userId).then((saved) => {
       if (saved) dispatch({ type: "load", tasks: saved });
       setLoaded(saved !== null);
     });
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!userId || !loaded) return;
     // shortcut: save failures are silent, show a message when sync arrives (Paso 6).
-    saveTasks(tasks).catch(() => {});
-  }, [tasks, loaded]);
+    saveTasks(userId, tasks).catch(() => {});
+  }, [tasks, loaded, userId]);
 
   return <TasksContext.Provider value={{ tasks, dispatch }}>{children}</TasksContext.Provider>;
 }

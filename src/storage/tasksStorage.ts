@@ -2,8 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { RichDoc, Task } from "@/types/task";
 
-// shortcut: one key for everyone on the device, user-scoped when auth arrives (Paso 5).
-const KEY = "tasks.v1";
+// One list per signed-in user, so two accounts on the same phone never see each other's tasks.
+const keyFor = (userId: string) => `tasks.v1.${userId}`;
 
 // Trust boundary: what comes back from disk is not trusted to have the Task shape.
 function isTask(item: unknown): item is Task {
@@ -21,10 +21,10 @@ function isTask(item: unknown): item is Task {
 
 // Returns null only when the storage itself cannot be read, so the caller
 // does not overwrite data it failed to load. Corrupt JSON is treated as empty.
-export async function loadTasks(): Promise<Task[] | null> {
+export async function loadTasks(userId: string): Promise<Task[] | null> {
   let raw: string | null;
   try {
-    raw = await AsyncStorage.getItem(KEY);
+    raw = await AsyncStorage.getItem(keyFor(userId));
   } catch {
     return null;
   }
@@ -37,6 +37,6 @@ export async function loadTasks(): Promise<Task[] | null> {
   }
 }
 
-export function saveTasks(tasks: Task[]): Promise<void> {
-  return AsyncStorage.setItem(KEY, JSON.stringify(tasks));
+export function saveTasks(userId: string, tasks: Task[]): Promise<void> {
+  return AsyncStorage.setItem(keyFor(userId), JSON.stringify(tasks));
 }

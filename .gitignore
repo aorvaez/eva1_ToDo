@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# secretos de Firebase (cada quien usa su .env)
+.env

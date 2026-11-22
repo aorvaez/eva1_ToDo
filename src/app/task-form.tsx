@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FormField } from "@/components/FormField";
 import { RichTextField } from "@/components/RichTextField";
+import { useAuth } from "@/context/AuthContext";
 import { useTasks } from "@/context/TasksContext";
 import { takePhoto } from "@/services/camera";
 import { describePlace, getCurrentLocation } from "@/services/location";
@@ -19,6 +20,7 @@ import { validateTask, type TaskErrors } from "@/utils/validateTask";
 // One screen for both flows: with an `id` param it edits, without it adds.
 export default function TaskForm() {
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const { user } = useAuth();
   const { tasks, dispatch } = useTasks();
   const editing = id ? tasks.find((task) => task.id === id) : undefined;
 
@@ -58,6 +60,7 @@ export default function TaskForm() {
   const descriptionError =
     errors.description && description ? validateTask({ title, description }).description : errors.description;
 
+  if (!user) return <Redirect href="/login" />;
   if (id && !editing) return <Redirect href="/" />;
 
   // Errors only show after the first failed save; from then on they update as the person types.
