@@ -96,6 +96,7 @@ export default function TaskForm() {
         imageUri,
         location: editing ? editing.location : place,
         weather: editing ? editing.weather : weather,
+        updatedAt: Date.now(),
       },
     });
     // The form clears itself: going back unmounts this screen and its state.

@@ -18,7 +18,7 @@ export function GuestImportOffer() {
 
     (async () => {
       if (await wasOffered(uid)) return;
-      const guest = await loadTasks(GUEST_ID);
+      const guest = (await loadTasks(GUEST_ID))?.filter((task) => !task.deleted);
       if (!guest || guest.length === 0) return;
       // Marked before asking: the question is asked once, whatever the answer.
       await markOffered(uid);

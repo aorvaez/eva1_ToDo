@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
+import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, getReactNativePersistence, initializeAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 // Values come from .env (see .env.example). EXPO_PUBLIC_ variables are read at build time.
 const config: FirebaseOptions = {
@@ -12,9 +13,12 @@ const config: FirebaseOptions = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-function createAuth(options: FirebaseOptions): Auth {
-  // Fast Refresh re-runs this module, and both calls throw if the app or auth already exists.
-  const app = getApps().length ? getApp() : initializeApp(options);
+// Fast Refresh re-runs this module, and both calls throw if the app or auth already exists.
+function getOrCreateApp(options: FirebaseOptions): FirebaseApp {
+  return getApps().length ? getApp() : initializeApp(options);
+}
+
+function createAuth(app: FirebaseApp): Auth {
   try {
     // The session is kept in AsyncStorage, so the person stays signed in after closing the app.
     return initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
@@ -27,6 +31,8 @@ function createAuth(options: FirebaseOptions): Auth {
   }
 }
 
-// null when .env is missing: the app then works without accounts, storing tasks only on the phone.
-export const auth: Auth | null =
-  config.apiKey && config.projectId && config.appId ? createAuth(config) : null;
+// Without .env everything below is null: the app works without accounts, storing tasks only on the phone.
+const app: FirebaseApp | null = config.apiKey && config.projectId && config.appId ? getOrCreateApp(config) : null;
+
+export const auth: Auth | null = app ? createAuth(app) : null;
+export const db: Firestore | null = app ? getFirestore(app) : null;

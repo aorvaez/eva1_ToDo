@@ -22,4 +22,8 @@ export type Task = {
   location?: { lat: number; lon: number; name?: string };
   // Weather at that place when the task was created (tempC in °C, code as WMO).
   weather?: { tempC: number; code: number };
+  // Last change time in ms; the newer copy wins when the cloud and the phone disagree.
+  updatedAt?: number;
+  // Deleted tasks stay as tombstones so a deletion can reach the cloud and other phones.
+  deleted?: boolean;
 };

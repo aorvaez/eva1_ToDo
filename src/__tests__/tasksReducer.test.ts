@@ -37,16 +37,20 @@ describe("tasksReducer", () => {
   });
 
   describe("delete", () => {
-    it("removes only the task with that id", () => {
-      expect(tasksReducer([a, b, c], { type: "delete", id: "b" })).toEqual([a, c]);
+    it("marks only the task with that id as deleted, keeping the others", () => {
+      const result = tasksReducer([a, b, c], { type: "delete", id: "b", at: 50 });
+      expect(result).toEqual([a, { ...b, deleted: true, updatedAt: 50 }, c]);
     });
 
     it("leaves the list unchanged when the id does not exist", () => {
-      expect(tasksReducer([a, b], { type: "delete", id: "zzz" })).toEqual([a, b]);
+      expect(tasksReducer([a, b], { type: "delete", id: "zzz", at: 50 })).toEqual([a, b]);
     });
+  });
 
-    it("returns an empty list after deleting the last task", () => {
-      expect(tasksReducer([a], { type: "delete", id: "a" })).toEqual([]);
+  describe("remote", () => {
+    it("applies the newer cloud copies (last write wins)", () => {
+      const newer = { ...a, title: "A desde la nube", updatedAt: 99 };
+      expect(tasksReducer([a], { type: "remote", tasks: [newer] })).toEqual([newer]);
     });
   });
 });

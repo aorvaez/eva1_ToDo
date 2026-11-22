@@ -25,7 +25,7 @@ export default function TaskList() {
       "Esta acción no se puede deshacer.",
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Eliminar", style: "destructive", onPress: () => dispatch({ type: "delete", id: task.id }) },
+        { text: "Eliminar", style: "destructive", onPress: () => dispatch({ type: "delete", id: task.id, at: Date.now() }) },
       ],
       { cancelable: true },
     );
@@ -42,7 +42,7 @@ export default function TaskList() {
                   onPress={user ? leave : () => router.push("/login")}
                   style={styles.leave}
                 >
-                  <Text style={styles.leaveText}>{user ? "Salir" : "Entrar"}</Text>
+                  <Text style={styles.leaveText}>{user ? "Salir" : "Iniciar sesión"}</Text>
                 </Pressable>
               )
             : undefined,
