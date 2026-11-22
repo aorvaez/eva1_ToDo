@@ -22,7 +22,8 @@ Las afirmaciones sobre APIs y versiones se verificaron en la documentación ofic
 | Lista | `FlatList` |
 | Confirmar al eliminar | `Alert.alert` |
 | Íconos | `@expo/vector-icons` (con riesgo de obsolescencia anotado) |
-| Teclado | `KeyboardAvoidingView` + `ScrollView`; respaldo: `react-native-keyboard-controller` |
+| Descripción con formato | `@10play/tentap-editor` (editor visual: negrita, cursiva, lista numerada, lista con viñetas, casilla) |
+| Teclado | `EditorKeyboardAvoidingView` de TenTap (reemplaza a `KeyboardAvoidingView` en el formulario); respaldo: `react-native-keyboard-controller` |
 | Pruebas | Jest 29 + `jest-expo` + React Native Testing Library 13; TDD en reducer y validación |
 | Calidad | `npx expo lint` y `npx tsc --noEmit` antes de cerrar cada tarea |
 | Commits | Conventional Commits |
@@ -209,11 +210,44 @@ La guía de íconos de Expo advierte: «`@expo/vector-icons` will be deprecated 
 - **`expo-symbols`:** ya está instalado y viene en Expo Go, pero está en **beta**, y en Android hay que dar un nombre de Material Symbol aparte del nombre de iOS (si solo se pasa un nombre de SF Symbol, en Android no se dibuja nada).
 - **`@react-native-vector-icons`:** es lo que Expo recomienda a futuro, pero **no se verificó** si funciona en Expo Go.
 
-## 9. Teclado: evitar que tape los campos y «Guardar»
+## 9. Editor de texto enriquecido en la descripción
 
 ### Qué se eligió
 
-`KeyboardAvoidingView` + `ScrollView` con `keyboardShouldPersistTaps="handled"`, y el botón «Guardar» **dentro del contenido que se desplaza**.
+**`@10play/tentap-editor`** (TenTap, versión `^1.1.0`), un editor de texto enriquecido para React Native basado en Tiptap/ProseMirror, con **`react-native-webview`** (versión `13.16.1`, la que ya trae Expo Go para SDK 57) como dependencia nativa.
+
+La descripción pasa de ser un `string` a ser un documento con formato: negrita, cursiva, lista numerada, lista con viñetas y casilla (lista de tareas). Se guarda como el JSON de Tiptap (tipo `RichDoc` en `src/types/task.ts`), no como HTML, porque TenTap lo entrega y lo recibe directo en ese formato con `getJSON()` e `initialContent`, y porque la tarjeta de la lista lo puede dibujar recorriendo el árbol, sin tener que analizar HTML.
+
+Componentes nuevos:
+
+- `src/components/RichTextField.tsx`: el campo del formulario. Crea el editor con `useEditorBridge` y dibuja una **barra propia** de 5 botones (no el `Toolbar` de TenTap, que usa imágenes PNG y solo aparece con el teclado abierto) que llaman a `toggleBold`, `toggleItalic`, `toggleOrderedList`, `toggleBulletList` y `toggleTaskList`, y marcan el botón activo con `useBridgeState`.
+- `src/components/RichTextPreview.tsx`: la vista previa en la tarjeta. Dibuja el mismo JSON con `Text` y `View` nativos, **sin WebView**, para no cargar un WebView por cada fila del `FlatList`.
+- `src/utils/richDoc.ts`: funciones puras (`docToText`, `textDoc`, `emptyDoc`) para pasar del documento a texto plano, usadas en `validateTask` y en las pruebas.
+
+### Por qué
+
+- El brief exige que la app funcione en **Expo Go SDK 57, sin librerías con código nativo adicional** (CA-G2). La documentación de TenTap dice que el editor funciona en Expo Go: Expo Go no puede cargar el módulo nativo del teclado personalizado, así que usa automáticamente un *driver* en JavaScript; solo el teclado nativo personalizado necesita un *development build*, y este proyecto no lo usa.
+- La única dependencia nativa de TenTap es `react-native-webview`, que **ya está en Expo Go** (confirmado en `node_modules/expo/bundledNativeModules.json`, versión `13.16.1`, igual a la que instala `npx expo install`).
+- TenTap trae de fábrica los cinco formatos pedidos (`TenTapStartKit` incluye `BoldBridge`, `ItalicBridge`, `OrderedListBridge`, `BulletListBridge` y `TaskListBridge`), así que no hace falta escribir un editor propio.
+- Es un **editor visual**: la negrita se ve en negrita mientras se escribe, sin símbolos de Markdown, que es lo que se pidió.
+
+### Alternativas descartadas y por qué
+
+- **Componente DOM de Expo (`'use dom'`) con un editor web (por ejemplo Tiptap para web):** también funciona en Expo Go, pero obliga a escribir la barra de formato en HTML/CSS dentro del componente DOM, separada del sistema de diseño de la app (`src/theme/`). TenTap ya resuelve el puente nativo y deja la barra en React Native normal.
+- **Barra de botones que inserta marcas de Markdown (`**negrita**`, `1. `, `[ ] `) sobre un `TextInput` normal:** no requiere dependencias nuevas, pero el usuario pidió ver el formato aplicado mientras se escribe, no símbolos. Se consideró primero y se descartó en la planificación.
+- **Editor propio con `TextInput` y `RichText`-like de React Native:** reimplementar listas, casillas y estado de negrita/cursiva a mano es mucho más trabajo que una librería ya probada.
+
+### Riesgos y puntos a verificar
+
+- Expo Go trae su propia versión de `react-native-webview`, distinta de la que instala el proyecto. La documentación de TenTap recomienda probar el editor dentro de un `ScrollView` en un *development build* antes de confiar en el comportamiento del teclado en Expo Go. Afecta al criterio CA-G5 (el teclado no debe tapar los campos ni «Guardar»).
+- El paquete agrega varias dependencias de Tiptap/ProseMirror (~5 MB descomprimidos). Es aceptable para este MVP.
+- Si Expo Go no lleva bien el teclado con el editor dentro del `ScrollView`, el respaldo documentado para el teclado en general (sección 10) sigue aplicando.
+
+## 10. Teclado: evitar que tape los campos y «Guardar»
+
+### Qué se eligió
+
+En el formulario, `EditorKeyboardAvoidingView` de TenTap (sustituye a `KeyboardAvoidingView` desde que se agregó el editor de la sección 9, porque TenTap la exige para que su propio teclado y su barra de formato no queden tapados) + `ScrollView` con `keyboardShouldPersistTaps="handled"` y `useScrollToCaret`, y el botón «Guardar» **dentro del contenido que se desplaza**. En el resto de la app, donde no hay editor de TenTap, sigue aplicando `KeyboardAvoidingView` normal.
 
 **Respaldo:** si no funciona bien en el celular, pasar a `react-native-keyboard-controller` con `KeyboardAwareScrollView`.
 
@@ -233,7 +267,7 @@ La guía de íconos de Expo advierte: «`@expo/vector-icons` will be deprecated 
 - Qué valor de `behavior` de `KeyboardAvoidingView` funciona mejor en Android. La guía de Expo sugiere dejarlo sin definir en Android, y el blog de *edge-to-edge* dice que hace falta usar el componente. Hay que probarlo en el dispositivo.
 - Este es el criterio CA-G5 del brief.
 
-## 10. Pruebas
+## 11. Pruebas
 
 ### Qué se eligió
 
@@ -243,7 +277,7 @@ La guía de íconos de Expo advierte: «`@expo/vector-icons` will be deprecated 
 | `jest` | `~29.7` | Ejecuta las pruebas |
 | `@types/jest` | `~29.5` | Tipos de TypeScript para Jest |
 | `@testing-library/react-native` | `~13.3.3` | Pruebas de componentes por lo que ve el usuario |
-| `react-test-renderer` | `19.2.3` | Dependencia compartida que pide RNTL 13; se fija a mano (desviación 2, sección 16) |
+| `react-test-renderer` | `19.2.3` | Dependencia compartida que pide RNTL 13; se fija a mano (desviación 2, sección 17) |
 
 Configuración: `"jest": { "preset": "jest-expo" }` en `package.json` y `"jest"` en `compilerOptions.types` de `tsconfig.json`.
 
@@ -253,7 +287,7 @@ Configuración: `"jest": { "preset": "jest-expo" }` en `package.json` y `"jest"`
 
 - `jest-expo ~57.0.6` es la versión que Expo lista para SDK 57 y depende de `babel-jest ^29`, es decir, de **Jest 29**. Jest 30 llega con SDK 58.
 - Para Expo Router, la guía oficial dice que en SDK 57 `expo-router/testing-library` funciona **solo con `@testing-library/react-native` versión 13**; la versión 14 se exige desde SDK 58.
-- `react-test-renderer` viene dentro de `jest-expo` (fijo en `19.2.3`), pero RNTL 13 lo pide como dependencia compartida y `npm` intenta traer una versión incompatible con React 19.2.3. Por eso **se fija a mano en `19.2.3`** (ver desviación 2 en la sección 16).
+- `react-test-renderer` viene dentro de `jest-expo` (fijo en `19.2.3`), pero RNTL 13 lo pide como dependencia compartida y `npm` intenta traer una versión incompatible con React 19.2.3. Por eso **se fija a mano en `19.2.3`** (ver desviación 2 en la sección 17).
 
 ### Trampa a evitar
 
@@ -265,13 +299,13 @@ El comando de la guía general (`npx expo install @testing-library/react-native`
 - **Solo reducer y validación, sin RNTL:** cubre lo esencial, pero deja fuera las pruebas de componentes que se pidieron.
 - **Pruebas de instantáneas (*snapshots*):** Expo recomienda pruebas de extremo a extremo (Maestro) antes que snapshots para probar la interfaz. Aquí no se usan.
 
-## 11. Calidad y commits
+## 12. Calidad y commits
 
 - **Antes de cerrar cada tarea:** `npx expo lint` y `npx tsc --noEmit`, sin errores. (Lo exige `AGENTS.md`.) Se complementa con `npx expo-doctor` y `npx expo install --check` al agregar paquetes.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/). Tipos que usaremos: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`. Ejemplo: `feat: add task form screen`.
 - **Instalar paquetes:** siempre con `npx expo install <paquete>`, nunca con `npm install` directo, para que resuelva versiones compatibles con el SDK (regla de `AGENTS.md`).
 
-## 12. Estructura de carpetas propuesta dentro de `src/`
+## 13. Estructura de carpetas propuesta dentro de `src/`
 
 Regla: **`src/app/` contiene solo pantallas y layouts**. Todo lo demás vive fuera.
 
@@ -285,24 +319,28 @@ src/
 │   ├── TaskItem.tsx
 │   ├── EmptyState.tsx
 │   ├── FormField.tsx
+│   ├── RichTextField.tsx   # Campo de descripción con formato (barra + editor TenTap)
+│   ├── RichTextPreview.tsx # Dibuja el formato en la tarjeta, sin WebView
 │   └── FloatingAddButton.tsx
 ├── context/                # Estado compartido
 │   ├── TasksContext.tsx    # Proveedor + hook useTasks
 │   └── tasksReducer.ts     # Reducer puro (TDD)
 ├── utils/                  # Funciones puras
-│   └── validateTask.ts     # Validación de título y descripción (TDD)
+│   ├── validateTask.ts     # Validación de título y descripción (TDD)
+│   └── richDoc.ts          # Documento con formato <-> texto plano (TDD)
 ├── theme/
 │   └── index.ts            # Colores, espaciados, tamaños
 ├── types/
-│   └── task.ts             # Tipo Task
+│   └── task.ts             # Tipo Task y RichDoc (documento con formato)
 └── __tests__/              # Pruebas (fuera de src/app/)
     ├── tasksReducer.test.ts
-    └── validateTask.test.ts
+    ├── validateTask.test.ts
+    └── components.test.tsx
 ```
 
 Los nombres de archivos, carpetas y variables van en inglés; los textos de la interfaz, en español.
 
-## 13. Herramientas de desarrollo con agentes
+## 14. Herramientas de desarrollo con agentes
 
 Estas herramientas ayudan a **escribir** el código; no forman parte de la app. Los datos de instalación vienen de `claude plugin list` y `claude mcp list` en el equipo del proyecto.
 
@@ -324,14 +362,16 @@ Notas:
   Un análisis de terceros indica que su beneficio se nota en tareas grandes y casi no en las pequeñas, y que no reemplaza decidir la arquitectura ni revisar los cambios.
 - **frontend-design y diseño:** como el diseño visual se documentará en `docs/design.md`, ese plugin será más útil en esa etapa.
 
-## 14. Paquetes a instalar
+## 15. Paquetes a instalar
 
-Se instalaron al empezar la implementación, con `npx expo install`. Las filas marcadas con (*) no estaban en la planificación original y se documentan en la sección 16.
+Se instalaron al empezar la implementación, con `npx expo install`. Las filas marcadas con (*) no estaban en la planificación original y se documentan en la sección 17.
 
 | Paquete | Versión | Tipo |
 |---|---|---|
 | `expo-crypto` | `~57.0.4` | dependencia |
 | `@expo/vector-icons` | `^15.0.2` | dependencia |
+| `@10play/tentap-editor` (*) | `^1.1.0` | dependencia |
+| `react-native-webview` (*) | `13.16.1` | dependencia |
 | `jest-expo` | `~57.0.6` | desarrollo |
 | `jest` | `~29.7` | desarrollo |
 | `@types/jest` | `~29.5` | desarrollo |
@@ -342,7 +382,7 @@ Se instalaron al empezar la implementación, con `npx expo install`. Las filas m
 
 Después de instalar, se corre `npx expo install --check` para confirmar que las versiones sean las que espera el SDK. Si `expo install` no acepta fijar una versión en alguno de los paquetes de desarrollo, se ajusta en ese momento.
 
-## 15. Riesgos y puntos a verificar
+## 16. Riesgos y puntos a verificar
 
 | # | Punto | Cómo se resuelve |
 |---|---|---|
@@ -352,14 +392,16 @@ Después de instalar, se corre `npx expo install --check` para confirmar que las
 | 4 | `@expo/vector-icons` puede quedar obsoleta | Tenerlo anotado; evaluar migrar en una unidad futura |
 | 5 | `Alert.alert` no distingue estilo de botones en Android | Aceptarlo en el MVP o reemplazar por un modal propio si el diseño lo pide |
 | 6 | Expo Go es un entorno de aprendizaje, no de producción | Mencionarlo en el informe; usar *development build* si se publicara |
+| 7 | Expo Go trae su propia versión de `react-native-webview`, distinta de la instalada | Probar el editor TenTap dentro del `ScrollView` en el celular; afecta a CA-G5 |
+| 8 | `@10play/tentap-editor` bajo Jest (usa WebView) | No se prueba con RNTL; se deja fuera de la cobertura automática y se valida a mano |
 
-## 16. Desviaciones documentadas
+## 17. Desviaciones documentadas
 
 Cambios respecto de lo planificado, surgidos al implementar.
 
 | # | Desviación | Por qué |
 |---|---|---|
-| 1 | Se agregan **`eslint`** (`^9.39.5`) y **`eslint-config-expo`** (`~57.0.2`), con un `eslint.config.js` que ignora `dist/` y `example/` | `npx expo lint` no funciona sin ESLint, y `AGENTS.md` exige ejecutarlo antes de cerrar cada tarea. No estaba en la sección 14 original |
+| 1 | Se agregan **`eslint`** (`^9.39.5`) y **`eslint-config-expo`** (`~57.0.2`), con un `eslint.config.js` que ignora `dist/` y `example/` | `npx expo lint` no funciona sin ESLint, y `AGENTS.md` exige ejecutarlo antes de cerrar cada tarea. No estaba en la sección 15 original |
 | 2 | Se fija **`react-test-renderer@19.2.3`** como dependencia de desarrollo | Estaba previsto no instalarlo a mano (ya viene dentro de `jest-expo`). Pero RNTL 13 lo declara como dependencia compartida (`>=18.2.0`) y `npm` intentó traer la versión 19.3.1, que exige React 19.3.1: la instalación fallaba con `ERESOLVE`. Fijarlo en la versión que usa `jest-expo` y que coincide con el React del proyecto (19.2.3) lo resuelve |
 
 ## Nota de fuentes
@@ -368,7 +410,8 @@ Cambios respecto de lo planificado, surgidos al implementar.
 - **React Native:** páginas de `FlatList`, `Alert`, `KeyboardAvoidingView` e introducción a los componentes principales.
 - **React:** referencia de `useReducer`.
 - **Frameworks comparados:** documentación de Ionic y Capacitor, de Flutter (arquitectura y Dart) y de Android (Kotlin).
-- **npm y archivos locales:** registro de npm para `jest-expo`, `@testing-library/react-native`; `node_modules/expo/bundledNativeModules.json`; `package.json` y `app.json`.
+- **npm y archivos locales:** registro de npm para `jest-expo`, `@testing-library/react-native`, `@10play/tentap-editor`; `node_modules/expo/bundledNativeModules.json`; `package.json` y `app.json`.
+- **TenTap:** documentación oficial (`10play.github.io/10tap-editor`), vía Context7, para instalación en Expo, soporte de Expo Go, bridges del `TenTapStartKit`, `useEditorBridge`, `useEditorContent`, `useBridgeState` y `EditorKeyboardAvoidingView`.
 - **Herramientas de agentes:** `claude plugin list` y `claude mcp list` en el equipo del proyecto para versiones, alcances y estado. Para describir qué hacen `ponytail` y `frontend-design` se usaron además el README de ponytail y artículos de terceros, no documentación de Anthropic; los niveles de ponytail salen de `/ponytail-help`.
-- **Context7:** está instalado con alcance de usuario y conectado, pero **no estuvo disponible durante la redacción**, porque la sesión de Claude Code se inició antes de instalarlo. Por eso las verificaciones se hicieron directamente contra las fuentes oficiales anteriores.
+- **Context7:** está instalado con alcance de usuario y conectado, pero **no estuvo disponible durante la redacción original de este documento**, porque la sesión de Claude Code se inició antes de instalarlo. Por eso esas verificaciones se hicieron directamente contra las fuentes oficiales anteriores. Sí se usó para la sección 9 (TenTap), agregada después.
 - Los puntos marcados **(criterio)** son juicios propios, no datos de una fuente.

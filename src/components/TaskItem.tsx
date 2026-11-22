@@ -1,6 +1,8 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { RichTextPreview } from "@/components/RichTextPreview";
+import { describeWeather } from "@/services/weather";
 import { colors, minTouchTarget, radius, shadow, spacing, typography } from "@/theme";
 import type { Task } from "@/types/task";
 
@@ -17,12 +19,33 @@ export function TaskItem({ task, onPress, onDelete }: Props) {
         android_ripple={{ color: colors.primaryContainer }}
         style={styles.content}
       >
+        {task.imageUri && (
+          <Image
+            source={{ uri: task.imageUri }}
+            accessibilityLabel={`Foto de ${task.title}`}
+            style={styles.photo}
+          />
+        )}
         <Text style={styles.title} numberOfLines={2}>
           {task.title}
         </Text>
-        <Text style={styles.description} numberOfLines={2}>
-          {task.description}
-        </Text>
+        <RichTextPreview doc={task.description} />
+        {task.location && (
+          <View style={styles.meta}>
+            <MaterialIcons name="place" size={16} color={colors.textSecondary} />
+            <Text style={styles.metaText}>
+              {task.location.name ?? `${task.location.lat.toFixed(4)}, ${task.location.lon.toFixed(4)}`}
+            </Text>
+          </View>
+        )}
+        {task.weather && (
+          <View style={styles.meta}>
+            <MaterialIcons name="thermostat" size={16} color={colors.textSecondary} />
+            <Text style={styles.metaText}>
+              {`${Math.round(task.weather.tempC)} °C · ${describeWeather(task.weather.code)}`}
+            </Text>
+          </View>
+        )}
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -56,8 +79,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.card,
     borderBottomLeftRadius: radius.card,
   },
+  photo: { width: "100%", height: 120, borderRadius: radius.input },
+  meta: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  metaText: { ...typography.label, color: colors.textSecondary },
   title: { ...typography.title, color: colors.text },
-  description: { ...typography.body, color: colors.textSecondary },
   delete: {
     width: minTouchTarget,
     height: minTouchTarget,

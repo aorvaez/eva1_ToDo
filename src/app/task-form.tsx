@@ -1,12 +1,19 @@
+import { EditorKeyboardAvoidingView, PlaceholderBridge, TenTapStartKit, useEditorBridge, useEditorContent, useScrollToCaret } from "@10play/tentap-editor";
 import * as Crypto from "expo-crypto";
 import { Redirect, Stack, router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FormField } from "@/components/FormField";
+import { RichTextField } from "@/components/RichTextField";
 import { useTasks } from "@/context/TasksContext";
+import { takePhoto } from "@/services/camera";
+import { describePlace, getCurrentLocation } from "@/services/location";
+import { fetchWeather } from "@/services/weather";
 import { colors, minTouchTarget, radius, spacing, typography } from "@/theme";
+import type { RichDoc } from "@/types/task";
+import { emptyDoc } from "@/utils/richDoc";
 import { validateTask, type TaskErrors } from "@/utils/validateTask";
 
 // One screen for both flows: with an `id` param it edits, without it adds.
@@ -16,21 +23,68 @@ export default function TaskForm() {
   const editing = id ? tasks.find((task) => task.id === id) : undefined;
 
   const [title, setTitle] = useState(editing?.title ?? "");
-  const [description, setDescription] = useState(editing?.description ?? "");
   const [errors, setErrors] = useState<TaskErrors>({});
+  const [imageUri, setImageUri] = useState<string | undefined>(editing?.imageUri);
+  const [place, setPlace] = useState(editing?.location);
+  const [weather, setWeather] = useState(editing?.weather);
+  const [locating, setLocating] = useState(!editing);
   const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Only a new task records where it was created; editing keeps the original place.
+  const isNew = !id;
+  useEffect(() => {
+    if (!isNew) return;
+    getCurrentLocation().then(async (result) => {
+      setLocating(false);
+      if (result.status !== "ok") return;
+      const { lat, lon } = result;
+      setPlace({ lat, lon });
+      // Name and weather are best effort: the task is saved even if they fail or arrive late.
+      const [name, now] = await Promise.all([describePlace(lat, lon), fetchWeather(lat, lon)]);
+      setPlace((p) => (p ? { ...p, name } : p));
+      setWeather(now);
+    });
+  }, [isNew]);
+
+  const editor = useEditorBridge({
+    initialContent: editing?.description ?? emptyDoc,
+    dynamicHeight: true,
+    bridgeExtensions: [...TenTapStartKit, PlaceholderBridge.configureExtension({ placeholder: "Describe la tarea" })],
+  });
+  useScrollToCaret(editor, scrollViewRef);
+  const description = useEditorContent(editor, { type: "json" }) as RichDoc | undefined;
+  // Once the description error is showing, keep it in sync as the person types, same as changeTitle.
+  const descriptionError =
+    errors.description && description ? validateTask({ title, description }).description : errors.description;
 
   if (id && !editing) return <Redirect href="/" />;
 
   // Errors only show after the first failed save; from then on they update as the person types.
-  const change = (next: { title: string; description: string }) => {
-    setTitle(next.title);
-    setDescription(next.description);
-    if (Object.keys(errors).length > 0) setErrors(validateTask(next));
+  const changeTitle = (value: string) => {
+    setTitle(value);
+    if (errors.title) setErrors(validateTask({ title: value, description: description ?? emptyDoc }));
+  };
+
+  const attachPhoto = async () => {
+    try {
+      const photo = await takePhoto();
+      if (photo.status === "ok") setImageUri(photo.uri);
+      if (photo.status === "denied") {
+        Alert.alert(
+          "Sin acceso a la cámara",
+          "Para adjuntar una foto, permite la cámara en los ajustes de la app.",
+          [{ text: "Cancelar", style: "cancel" }, { text: "Abrir ajustes", onPress: () => Linking.openSettings() }],
+        );
+      }
+    } catch {
+      Alert.alert("No se pudo tomar la foto", "Inténtalo de nuevo.");
+    }
   };
 
   const save = () => {
-    const found = validateTask({ title, description });
+    const current = description ?? emptyDoc;
+    const found = validateTask({ title, description: current });
     setErrors(found);
     if (Object.keys(found).length > 0) return;
     dispatch({
@@ -38,7 +92,11 @@ export default function TaskForm() {
       task: {
         id: editing?.id ?? Crypto.randomUUID(),
         title: title.trim(),
-        description: description.trim(),
+        description: current,
+        imageUri,
+        location: editing ? editing.location : place,
+        weather: editing ? editing.weather : weather,
+        updatedAt: Date.now(),
       },
     });
     // The form clears itself: going back unmounts this screen and its state.
@@ -46,28 +104,41 @@ export default function TaskForm() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior="padding">
+    <EditorKeyboardAvoidingView style={styles.flex}>
       <Stack.Screen options={{ title: editing ? "Editar tarea" : "Nueva tarea" }} />
       <ScrollView
+        ref={scrollViewRef}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.content, { paddingBottom: spacing.lg + insets.bottom }]}
       >
         <FormField
           label="Título"
           value={title}
-          onChangeText={(value) => change({ title: value, description })}
+          onChangeText={changeTitle}
           error={errors.title}
           placeholder="Ej. Comprar pan"
           returnKeyType="next"
         />
-        <FormField
-          label="Descripción"
-          value={description}
-          onChangeText={(value) => change({ title, description: value })}
-          error={errors.description}
-          placeholder="Ej. Pasar por la panadería antes de las 6"
-          multiline
-        />
+        <RichTextField label="Descripción" editor={editor} error={descriptionError} />
+        {imageUri && <Image source={{ uri: imageUri }} accessibilityLabel="Foto adjunta" style={styles.photo} />}
+        {isNew && (
+          <Text style={styles.place} accessibilityRole="text">
+            {locating
+              ? "Obteniendo ubicación…"
+              : place
+                ? "Se guardará tu ubicación actual."
+                : "Sin ubicación: la tarea se guardará sin ella."}
+          </Text>
+        )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={imageUri ? "Cambiar foto" : "Adjuntar foto"}
+          onPress={attachPhoto}
+          android_ripple={{ color: colors.primaryContainer }}
+          style={styles.secondaryButton}
+        >
+          <Text style={styles.secondaryText}>{imageUri ? "Cambiar foto" : "Adjuntar foto"}</Text>
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Guardar"
@@ -78,7 +149,7 @@ export default function TaskForm() {
           <Text style={styles.buttonText}>Guardar</Text>
         </Pressable>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </EditorKeyboardAvoidingView>
   );
 }
 
@@ -93,4 +164,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   buttonText: { ...typography.button, color: colors.onPrimary },
+  secondaryButton: {
+    minHeight: minTouchTarget,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.outline,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  secondaryText: { ...typography.button, color: colors.primary },
+  photo: { width: "100%", height: 200, borderRadius: radius.input },
+  place: { ...typography.body, color: colors.textSecondary },
 });
