@@ -1,5 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { RichTextPreview } from "@/components/RichTextPreview";
 import { colors, minTouchTarget, radius, shadow, spacing, typography } from "@/theme";
@@ -18,6 +18,13 @@ export function TaskItem({ task, onPress, onDelete }: Props) {
         android_ripple={{ color: colors.primaryContainer }}
         style={styles.content}
       >
+        {task.imageUri && (
+          <Image
+            source={{ uri: task.imageUri }}
+            accessibilityLabel={`Foto de ${task.title}`}
+            style={styles.photo}
+          />
+        )}
         <Text style={styles.title} numberOfLines={2}>
           {task.title}
         </Text>
@@ -55,6 +62,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.card,
     borderBottomLeftRadius: radius.card,
   },
+  photo: { width: "100%", height: 120, borderRadius: radius.input },
   title: { ...typography.title, color: colors.text },
   delete: {
     width: minTouchTarget,

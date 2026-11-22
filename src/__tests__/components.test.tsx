@@ -27,6 +27,11 @@ describe("TaskItem", () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
+  it("shows the attached photo when the task has one", () => {
+    render(<TaskItem task={{ ...task, imageUri: "file:///docs/1.jpg" }} onPress={jest.fn()} onDelete={jest.fn()} />);
+    expect(screen.getByLabelText("Foto de Comprar pan")).toBeTruthy();
+  });
+
   it("tapping the card opens the editor", () => {
     const onPress = jest.fn();
     render(<TaskItem task={task} onPress={onPress} onDelete={jest.fn()} />);

@@ -16,4 +16,6 @@ export type Task = {
   id: string;
   title: string;
   description: RichDoc;
+  // Local file in the app's documents folder; optional so tasks saved before Eva 2 still load.
+  imageUri?: string;
 };
