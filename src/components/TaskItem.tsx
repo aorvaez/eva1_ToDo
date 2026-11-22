@@ -1,6 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { RichTextPreview } from "@/components/RichTextPreview";
 import { colors, minTouchTarget, radius, shadow, spacing, typography } from "@/theme";
 import type { Task } from "@/types/task";
 
@@ -20,9 +21,7 @@ export function TaskItem({ task, onPress, onDelete }: Props) {
         <Text style={styles.title} numberOfLines={2}>
           {task.title}
         </Text>
-        <Text style={styles.description} numberOfLines={2}>
-          {task.description}
-        </Text>
+        <RichTextPreview doc={task.description} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -57,7 +56,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: radius.card,
   },
   title: { ...typography.title, color: colors.text },
-  description: { ...typography.body, color: colors.textSecondary },
   delete: {
     width: minTouchTarget,
     height: minTouchTarget,

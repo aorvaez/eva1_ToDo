@@ -1,9 +1,10 @@
 import { tasksReducer } from "@/context/tasksReducer";
 import type { Task } from "@/types/task";
+import { textDoc } from "@/utils/richDoc";
 
-const a: Task = { id: "a", title: "A", description: "desc a" };
-const b: Task = { id: "b", title: "B", description: "desc b" };
-const c: Task = { id: "c", title: "C", description: "desc c" };
+const a: Task = { id: "a", title: "A", description: textDoc("desc a") };
+const b: Task = { id: "b", title: "B", description: textDoc("desc b") };
+const c: Task = { id: "c", title: "C", description: textDoc("desc c") };
 
 describe("tasksReducer", () => {
   describe("add", () => {
@@ -20,7 +21,7 @@ describe("tasksReducer", () => {
 
   describe("update", () => {
     it("replaces the task in the same position and keeps the id", () => {
-      const edited: Task = { ...b, title: "B2", description: "nuevo" };
+      const edited: Task = { ...b, title: "B2", description: textDoc("nuevo") };
       expect(tasksReducer([a, b, c], { type: "update", task: edited })).toEqual([a, edited, c]);
     });
 
