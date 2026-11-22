@@ -21,6 +21,7 @@
 
 - Ver la lista de tareas.
 - Agregar una tarea (título y descripción obligatorios).
+- Dar formato a la descripción mientras se escribe: **negrita, cursiva, lista numerada, lista con viñetas y casilla** (ver `docs/design.md`).
 - Editar una tarea existente.
 - Eliminar una tarea, con confirmación previa.
 - Limpiar el formulario después de guardar.
@@ -84,12 +85,13 @@ Una tarea es un objeto con tres campos:
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
 | `id` | `string` | Sí (lo genera la app) | Identificador único. No lo escribe el usuario. Sirve para encontrar la tarea al editar o eliminar, y como `key` en la lista |
-| `title` | `string` | Sí | Título corto de la tarea |
-| `description` | `string` | Sí | Detalle de la tarea |
+| `title` | `string` | Sí | Título corto de la tarea, en texto plano |
+| `description` | documento con formato | Sí | Detalle de la tarea, con negrita, cursiva, lista numerada, lista con viñetas y casillas |
 
 **Reglas del modelo:**
 
-- `title` y `description` no pueden estar vacíos ni contener solo espacios. Se guardan sin espacios sobrantes al inicio y al final.
+- `title` no puede estar vacío ni contener solo espacios. Se guarda sin espacios sobrantes al inicio y al final.
+- `description` no puede quedar vacía: se considera vacía si, quitando el formato, no queda ningún texto (por ejemplo, una lista sin ítems o un párrafo en blanco).
 - El `id` no cambia nunca, ni siquiera al editar.
 - La lista completa es un arreglo de tareas, guardado en el estado en memoria.
 - No hay límite de largo en los campos en este MVP.
@@ -130,9 +132,10 @@ Una tarea es un objeto con tres campos:
 | Estado | Cuándo ocurre | Qué ve la persona |
 |---|---|---|
 | **Lista vacía** | No hay tareas (al abrir la app o al borrar la última) | Un mensaje amigable, por ejemplo «Aún no tienes tareas», con una indicación de cómo empezar («Toca + para agregar una»). El botón «+» sigue visible |
-| **Lista con tareas** | Hay una o más tareas | Cada tarea muestra su título y su descripción, y un ícono de papelera |
+| **Lista con tareas** | Hay una o más tareas | Cada tarea muestra su título y su descripción ya formateada (negrita, cursiva, listas, casillas), y un ícono de papelera |
+| **Formato activo en la descripción** | El cursor está sobre un texto con negrita, cursiva, dentro de una lista o de una casilla | El botón correspondiente de la barra de formato se ve marcado |
 | **Error: título vacío** | Se intenta guardar sin título (o solo espacios) | Mensaje bajo el campo, por ejemplo «El título es obligatorio» |
-| **Error: descripción vacía** | Se intenta guardar sin descripción (o solo espacios) | Mensaje bajo el campo, por ejemplo «La descripción es obligatoria» |
+| **Error: descripción vacía** | Se intenta guardar sin descripción, o con solo una lista vacía o espacios | Mensaje bajo el campo, por ejemplo «La descripción es obligatoria» |
 | **Ambos campos inválidos** | Se intenta guardar con los dos vacíos | Se muestran los dos mensajes a la vez |
 | **Confirmación de eliminación** | Se toca la papelera | Diálogo con «Cancelar» y «Eliminar» |
 | **Guardado correcto** | Se guarda una tarea válida | El formulario se limpia, la app vuelve a la lista y el cambio es visible allí |
@@ -185,7 +188,16 @@ Cada criterio se puede comprobar a mano en el celular.
 - [ ] **CA-D5.** Al eliminar la última tarea, se muestra el estado de lista vacía.
 - [ ] **CA-D6.** Tocar la papelera abre solo el diálogo de confirmación; no abre el formulario de edición.
 
-### 7.5 Generales
+### 7.5 Formato de la descripción
+
+- [ ] **CA-F1.** Al seleccionar texto y tocar el botón de negrita, el texto se ve en negrita de inmediato, sin símbolos.
+- [ ] **CA-F2.** Igual que CA-F1, para cursiva.
+- [ ] **CA-F3.** Al tocar el botón de lista numerada, los ítems se numeran («1.», «2.», …).
+- [ ] **CA-F4.** Al tocar el botón de lista con viñetas, los ítems muestran una viñeta («•»).
+- [ ] **CA-F5.** Al tocar el botón de casilla, aparece un ítem marcable; tocarlo lo marca o desmarca.
+- [ ] **CA-F6.** El formato de la descripción se conserva tal cual, tanto en la tarjeta de la lista como al volver a abrir la tarea para editarla.
+
+### 7.6 Generales
 
 - [ ] **CA-G1.** Todos los textos que ve la persona están en español.
 - [ ] **CA-G2.** La app funciona en un celular Android con Expo Go (SDK 57), sin librerías que requieran código nativo adicional.
@@ -215,11 +227,13 @@ Cada criterio se puede comprobar a mano en el celular.
 4. **Tarea inexistente.** Si el formulario recibe un `id` que no existe, vuelve a la lista.
 5. **Orden de la lista.** Las tareas nuevas se muestran primero (ver supuesto 3).
 6. **Teclado.** El formulario debe evitar que el teclado tape los campos y el botón «Guardar». Es un requisito del MVP.
+7. **Casillas de la descripción.** Se marcan y desmarcan solo dentro del editor del formulario, no desde la tarjeta de la lista. Marcarlas desde la tarjeta queda fuera de este MVP.
 
 ## Sugerencias (fuera de alcance, para considerar más adelante)
 
 Estas ideas **no forman parte del MVP**.
 
 - Marcar tareas como completadas.
+- Marcar o desmarcar las casillas de la descripción directamente desde la tarjeta de la lista.
 - Modo oscuro.
 - Guardar las tareas en el dispositivo para que no se pierdan al cerrar la app (por ejemplo con `expo-sqlite`).
