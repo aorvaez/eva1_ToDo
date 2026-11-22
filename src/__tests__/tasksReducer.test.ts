@@ -50,3 +50,17 @@ describe("tasksReducer", () => {
     });
   });
 });
+
+describe("import", () => {
+  it("adds only the tasks whose id is not in the list, first", () => {
+    const state = [a];
+    const result = tasksReducer(state, { type: "import", tasks: [a, b, c] });
+    expect(result).toEqual([b, c, a]);
+  });
+
+  it("does not mutate the previous state", () => {
+    const state = [a];
+    tasksReducer(state, { type: "import", tasks: [b] });
+    expect(state).toEqual([a]);
+  });
+});

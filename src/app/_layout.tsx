@@ -1,8 +1,10 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
+import { GuestImportOffer } from "@/components/GuestImportOffer";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { TasksProvider } from "@/context/TasksContext";
+import { GUEST_ID } from "@/storage/tasksStorage";
 import { colors } from "@/theme";
 
 export default function RootLayout() {
@@ -17,9 +19,11 @@ function AppShell() {
   const { user, loading } = useAuth();
   if (loading) return null;
 
-  // key resets the list when the person changes, so one account never sees another's tasks.
+  // key resets the list when the person changes (guest, or another account), so lists never mix.
+  const owner = user?.uid ?? GUEST_ID;
   return (
-    <TasksProvider key={user?.uid ?? "guest"} userId={user?.uid ?? null}>
+    <TasksProvider key={owner} userId={owner}>
+      <GuestImportOffer />
       <StatusBar style="dark" />
       <Stack
         screenOptions={{

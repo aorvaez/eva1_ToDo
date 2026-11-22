@@ -4,7 +4,8 @@ export type TasksAction =
   | { type: "add"; task: Task }
   | { type: "update"; task: Task }
   | { type: "delete"; id: string }
-  | { type: "load"; tasks: Task[] };
+  | { type: "load"; tasks: Task[] }
+  | { type: "import"; tasks: Task[] };
 
 // Pure on purpose: the id arrives inside the action, so tests need no mocks.
 export function tasksReducer(state: Task[], action: TasksAction): Task[] {
@@ -17,5 +18,10 @@ export function tasksReducer(state: Task[], action: TasksAction): Task[] {
       return state.filter((task) => task.id !== action.id);
     case "load":
       return action.tasks;
+    case "import": {
+      // Copies never overwrite a task that already has the same id.
+      const known = new Set(state.map((task) => task.id));
+      return [...action.tasks.filter((task) => !known.has(task.id)), ...state];
+    }
   }
 }

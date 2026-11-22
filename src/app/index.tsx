@@ -1,4 +1,4 @@
-import { Redirect, Stack, router } from "expo-router";
+import { Stack, router } from "expo-router";
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -7,7 +7,7 @@ import { FAB_SIZE, FloatingAddButton } from "@/components/FloatingAddButton";
 import { TaskItem } from "@/components/TaskItem";
 import { useAuth } from "@/context/AuthContext";
 import { useTasks } from "@/context/TasksContext";
-import { signOut } from "@/services/auth";
+import { authAvailable, signOut } from "@/services/auth";
 import { colors, minTouchTarget, spacing, typography } from "@/theme";
 import type { Task } from "@/types/task";
 
@@ -15,8 +15,6 @@ export default function TaskList() {
   const { user } = useAuth();
   const { tasks, dispatch } = useTasks();
   const insets = useSafeAreaInsets();
-
-  if (!user) return <Redirect href="/login" />;
 
   const leave = () =>
     signOut().catch(() => Alert.alert("No se pudo cerrar sesión", "Inténtalo de nuevo."));
@@ -36,11 +34,18 @@ export default function TaskList() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          headerRight: () => (
-            <Pressable accessibilityRole="button" accessibilityLabel="Cerrar sesión" onPress={leave} style={styles.leave}>
-              <Text style={styles.leaveText}>Salir</Text>
-            </Pressable>
-          ),
+          headerRight: authAvailable
+            ? () => (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={user ? "Cerrar sesión" : "Iniciar sesión"}
+                  onPress={user ? leave : () => router.push("/login")}
+                  style={styles.leave}
+                >
+                  <Text style={styles.leaveText}>{user ? "Salir" : "Entrar"}</Text>
+                </Pressable>
+              )
+            : undefined,
         }}
       />
       <FlatList

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { loadTasks, saveTasks } from "@/storage/tasksStorage";
+import { GUEST_ID, loadTasks, markOffered, saveTasks, wasOffered } from "@/storage/tasksStorage";
 import type { Task } from "@/types/task";
 import { textDoc } from "@/utils/richDoc";
 
@@ -48,5 +48,20 @@ describe("tasksStorage", () => {
   it("returns null when the storage cannot be read", async () => {
     jest.spyOn(AsyncStorage, "getItem").mockRejectedValueOnce(new Error("disco lleno"));
     expect(await loadTasks("u1")).toBeNull();
+  });
+});
+
+describe("guest list and import offer", () => {
+  it("keeps the guest list apart from every account", async () => {
+    await saveTasks(GUEST_ID, [a]);
+    expect(await loadTasks("u1")).toEqual([]);
+    expect(await loadTasks(GUEST_ID)).toEqual([a]);
+  });
+
+  it("remembers the import question per account", async () => {
+    expect(await wasOffered("u1")).toBe(false);
+    await markOffered("u1");
+    expect(await wasOffered("u1")).toBe(true);
+    expect(await wasOffered("u2")).toBe(false);
   });
 });

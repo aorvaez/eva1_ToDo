@@ -7,19 +7,19 @@ type AuthContextValue = { user: User | null; loading: boolean };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// loading stays true until Firebase says whether a saved session exists, so screens never flash the login.
+// Without .env there is no account system: nobody is signed in and nothing needs to load.
+// Otherwise loading stays true until Firebase says whether a saved session exists.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(auth !== null);
 
-  useEffect(
-    () =>
-      onAuthStateChanged(auth, (next) => {
-        setUser(next);
-        setLoading(false);
-      }),
-    [],
-  );
+  useEffect(() => {
+    if (!auth) return;
+    return onAuthStateChanged(auth, (next) => {
+      setUser(next);
+      setLoading(false);
+    });
+  }, []);
 
   return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
 }
