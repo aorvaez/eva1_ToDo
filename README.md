@@ -142,6 +142,38 @@ Servicios (src/services): cámara · ubicación · clima · importación · aute
 - **Servicios aislados** en `src/services/`: cada uno encapsula un periférico o una API, y las pantallas no conocen los detalles.
 - **Modo sin configuración:** si falta el `.env`, `auth` y `db` son `null`; la app sigue funcionando en modo local y explica que las cuentas no están disponibles.
 
+### Navegación stack (Expo Router)
+
+Navegación **stack** con tres pantallas: **Mis tareas** (lista), **Nueva tarea / Editar tarea** (formulario) e **Iniciar sesión** (opcional). La app abre directo en la lista, con o sin cuenta. Después de guardar, la app **vuelve a la lista**; después de entrar con cuenta, **reemplaza** la pantalla de login por la lista.
+
+```mermaid
+flowchart TD
+    A([Abrir la app]) --> L["Mis tareas<br/>(ruta /)"]
+    L -- "Iniciar sesión (cabecera, sin cuenta)" --> LG["Iniciar sesión<br/>(/login)"]
+    L -- "Salir (cabecera, con cuenta)" --> L
+    LG -- "Entrar o crear cuenta (válido)" --> OFF{"¿Importar tus tareas?<br/>(solo si tenías tareas sin cuenta)"}
+    OFF -- "Importar" --> L
+    OFF -- "Ahora no" --> L
+    LG -- "Seguir sin cuenta" --> L
+    L -- "Botón Importar tareas" --> L
+    L -- "Botón flotante +" --> F1["Nueva tarea<br/>(/task-form)"]
+    L -- "Tocar una tarea" --> F2["Editar tarea<br/>(/task-form?id=...)"]
+    L -- "Ícono papelera" --> D{"¿Eliminar<br/>esta tarea?"}
+    D -- "Eliminar" --> L
+    D -- "Cancelar" --> L
+    F1 -- "Guardar (válido)" --> L
+    F2 -- "Guardar (válido)" --> L
+    F1 -- "Guardar (inválido)" --> F1
+    F2 -- "Guardar (inválido)" --> F2
+    F1 -- "Atrás (sin guardar)" --> L
+    F2 -- "Atrás (sin guardar)" --> L
+    F2 -- "La tarea ya no existe" --> L
+```
+
+Las pantallas están en `src/app/`: `_layout.tsx` (stack y proveedores), `index.tsx` (Mis tareas), `task-form.tsx` (agregar o editar según el parámetro `id`) y `login.tsx`. Al cambiar de persona, `_layout.tsx` reinicia la lista (`key` en `TasksProvider`), así que las tareas de una cuenta no se mezclan con las de otra ni con las sin cuenta.
+
+Flujo de la importación de JSONPlaceholder y del aviso de importar tareas sin cuenta: detalles en `src/app/index.tsx` y `src/components/GuestImportOffer.tsx`.
+
 ---
 
 ## 6. CÓMO EJECUTAR EL PROYECTO
