@@ -2,7 +2,7 @@
   <img src="assets/images/Logo_IPSS.png" alt="Logo del Instituto Profesional San Sebastián" width="420">
 </p>
 
-# Evaluación 2 – App de Lista de Tareas
+# Evaluación 2 – ToDo-app (segunda mejora)
 
 **Desarrollo de Aplicaciones Móviles**
 Instituto Profesional San Sebastián
@@ -29,7 +29,7 @@ Instituto Profesional San Sebastián
 9. [Estructura de archivos](#9-estructura-de-archivos)
 10. [Eva 1 → Eva 2: cómo estaba y cómo está](#10-eva-1--eva-2-cómo-estaba-y-cómo-está)
 
-Documentos de apoyo: [docs/brief.md](docs/brief.md) (qué se construye y criterios de aceptación), [docs/stack.md](docs/stack.md) (con qué se construye y por qué) y [docs/design.md](docs/design.md) (diseño visual).
+Documentos de apoyo: [docs/avances-eva2.md](docs/avances-eva2.md) (registro de avances paso por paso), [docs/informe-eva1.md](docs/informe-eva1.md) (informe completo de la Evaluación 1), [docs/brief.md](docs/brief.md) (qué se construye y criterios de aceptación), [docs/stack.md](docs/stack.md) (con qué se construye y por qué) y [docs/design.md](docs/design.md) (diseño visual).
 
 ---
 
@@ -305,7 +305,7 @@ ToDo-app/
 
 **Cambios de stack:** se agregaron `@react-native-async-storage/async-storage`, `firebase`, `expo-image-picker`, `expo-file-system` y `expo-location`. Se mantuvieron Expo, React Native y TypeScript. El enunciado mencionaba Ionic y Capacitor; se decidió seguir con Expo, que ya era la base del proyecto y ofrece los mismos periféricos mediante módulos oficiales.
 
-**Justificación del framework y diseño visual:** siguen en [docs/stack.md](docs/stack.md) y [docs/design.md](docs/design.md). El README de la Evaluación 1 está en el commit `387dae3` si se necesita el texto original.
+**Justificación del framework y diseño visual:** siguen en [docs/stack.md](docs/stack.md) y [docs/design.md](docs/design.md). El informe completo de la Evaluación 1 está en [docs/informe-eva1.md](docs/informe-eva1.md).
 
 ---
 
