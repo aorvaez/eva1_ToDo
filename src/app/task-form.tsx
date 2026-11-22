@@ -1,7 +1,7 @@
 import { EditorKeyboardAvoidingView, PlaceholderBridge, TenTapStartKit, useEditorBridge, useEditorContent, useScrollToCaret } from "@10play/tentap-editor";
 import * as Crypto from "expo-crypto";
 import { Redirect, Stack, router, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -9,6 +9,7 @@ import { FormField } from "@/components/FormField";
 import { RichTextField } from "@/components/RichTextField";
 import { useTasks } from "@/context/TasksContext";
 import { takePhoto } from "@/services/camera";
+import { getCurrentLocation } from "@/services/location";
 import { colors, minTouchTarget, radius, spacing, typography } from "@/theme";
 import type { RichDoc } from "@/types/task";
 import { emptyDoc } from "@/utils/richDoc";
@@ -23,8 +24,20 @@ export default function TaskForm() {
   const [title, setTitle] = useState(editing?.title ?? "");
   const [errors, setErrors] = useState<TaskErrors>({});
   const [imageUri, setImageUri] = useState<string | undefined>(editing?.imageUri);
+  const [place, setPlace] = useState(editing?.location);
+  const [locating, setLocating] = useState(!editing);
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Only a new task records where it was created; editing keeps the original place.
+  const isNew = !id;
+  useEffect(() => {
+    if (!isNew) return;
+    getCurrentLocation().then((result) => {
+      if (result.status === "ok") setPlace({ lat: result.lat, lon: result.lon });
+      setLocating(false);
+    });
+  }, [isNew]);
 
   const editor = useEditorBridge({
     initialContent: editing?.description ?? emptyDoc,
@@ -68,7 +81,13 @@ export default function TaskForm() {
     if (Object.keys(found).length > 0) return;
     dispatch({
       type: editing ? "update" : "add",
-      task: { id: editing?.id ?? Crypto.randomUUID(), title: title.trim(), description: current, imageUri },
+      task: {
+        id: editing?.id ?? Crypto.randomUUID(),
+        title: title.trim(),
+        description: current,
+        imageUri,
+        location: editing ? editing.location : place,
+      },
     });
     // The form clears itself: going back unmounts this screen and its state.
     router.back();
@@ -92,6 +111,15 @@ export default function TaskForm() {
         />
         <RichTextField label="Descripción" editor={editor} error={descriptionError} />
         {imageUri && <Image source={{ uri: imageUri }} accessibilityLabel="Foto adjunta" style={styles.photo} />}
+        {isNew && (
+          <Text style={styles.place} accessibilityRole="text">
+            {locating
+              ? "Obteniendo ubicación…"
+              : place
+                ? "Se guardará tu ubicación actual."
+                : "Sin ubicación: la tarea se guardará sin ella."}
+          </Text>
+        )}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={imageUri ? "Cambiar foto" : "Adjuntar foto"}
@@ -136,4 +164,5 @@ const styles = StyleSheet.create({
   },
   secondaryText: { ...typography.button, color: colors.primary },
   photo: { width: "100%", height: 200, borderRadius: radius.input },
+  place: { ...typography.body, color: colors.textSecondary },
 });

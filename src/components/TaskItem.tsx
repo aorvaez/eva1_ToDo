@@ -29,6 +29,14 @@ export function TaskItem({ task, onPress, onDelete }: Props) {
           {task.title}
         </Text>
         <RichTextPreview doc={task.description} />
+        {task.location && (
+          <View style={styles.place}>
+            <MaterialIcons name="place" size={16} color={colors.textSecondary} />
+            <Text style={styles.placeText}>
+              {`${task.location.lat.toFixed(4)}, ${task.location.lon.toFixed(4)}`}
+            </Text>
+          </View>
+        )}
       </Pressable>
       <Pressable
         accessibilityRole="button"
@@ -63,6 +71,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: radius.card,
   },
   photo: { width: "100%", height: 120, borderRadius: radius.input },
+  place: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  placeText: { ...typography.label, color: colors.textSecondary },
   title: { ...typography.title, color: colors.text },
   delete: {
     width: minTouchTarget,

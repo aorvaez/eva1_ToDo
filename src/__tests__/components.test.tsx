@@ -32,6 +32,11 @@ describe("TaskItem", () => {
     expect(screen.getByLabelText("Foto de Comprar pan")).toBeTruthy();
   });
 
+  it("shows where the task was created", () => {
+    render(<TaskItem task={{ ...task, location: { lat: -33.4489, lon: -70.6693 } }} onPress={jest.fn()} onDelete={jest.fn()} />);
+    expect(screen.getByText("-33.4489, -70.6693")).toBeTruthy();
+  });
+
   it("tapping the card opens the editor", () => {
     const onPress = jest.fn();
     render(<TaskItem task={task} onPress={onPress} onDelete={jest.fn()} />);
